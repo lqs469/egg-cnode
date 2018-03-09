@@ -78,26 +78,27 @@ describe('test/app/controller/user.test.js', () => {
 
   describe('- Admin', () => {
     async function handleUserPost(url) {
+      delete user.is_admin;
       app.mockCsrf();
       app.mockContext({ user });
       const { text } = await app.httpRequest()
         .post(url)
-        .type('form')
         .send()
         .expect(200);
       assert(/<strong>([\S\s]+)<\/strong>/g.exec(text)[1] === '需要管理员权限。');
     }
 
     async function handleAdminPost(url, body, cb) {
-      const adminName = Object.keys(app.config.admins)[0];
-      let admin = await ctx.service.user.getUserByLoginName(adminName);
-      if (!admin) {
-        admin = await ctx.service.user.newAndSave(adminName, adminName, 'pass', 'admin@test.com', 'u', 'active');
-      }
-      const auth_token = admin._id + '$$$$';
-      app.mockCookies({ [app.config.auth_cookie_name]: auth_token });
+      // const adminName = Object.keys(app.config.admins)[0];
+      // let admin = await ctx.service.user.getUserByLoginName(adminName);
+      // if (!admin) {
+      //   admin = await ctx.service.user.newAndSave(adminName, adminName, 'pass', 'admin@test.com', 'u', 'active');
+      // }
+      // const auth_token = admin._id + '$$$$';
+      // app.mockCookies({ [app.config.auth_cookie_name]: auth_token });
+      user.is_admin = true;
       app.mockCsrf();
-      app.mockContext({ user: admin });
+      app.mockContext({ user });
       const res = await app.httpRequest()
         .post(url)
         .type('json')
