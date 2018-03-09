@@ -1,7 +1,6 @@
 'use strict';
 
 module.exports = () => {
-
   /*
    * 需要登录
    */
