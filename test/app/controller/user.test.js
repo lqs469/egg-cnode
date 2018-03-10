@@ -81,7 +81,29 @@ describe('test/app/controller/user.test.js', () => {
     it('should POST /setting change password ok', async () => {
       app.mockCsrf();
       app.mockContext({ user });
-      const { status } = await app.httpRequest()
+      const res1 = await app.httpRequest()
+        .post('/setting')
+        .type('form')
+        .send({
+          action: 'change_password',
+          old_pass: '',
+          new_pass: '',
+        });
+      assert(res1.status === 200);
+      assert(/<strong>([\S\s]+)<\/strong>/g.exec(res1.text)[1] === '旧密码或新密码不得为空');
+
+      const res2 = await app.httpRequest()
+        .post('/setting')
+        .type('form')
+        .send({
+          action: 'change_password',
+          old_pass: 'worngPass',
+          new_pass: 'worngPass',
+        });
+      assert(res2.status === 200);
+      assert(/<strong>([\S\s]+)<\/strong>/g.exec(res2.text)[1] === '当前密码不正确。');
+
+      const res3 = await app.httpRequest()
         .post('/setting')
         .type('form')
         .send({
@@ -89,7 +111,7 @@ describe('test/app/controller/user.test.js', () => {
           old_pass: 'pass',
           new_pass: 'newpass',
         });
-      assert(status === 200);
+      assert(res3.status === 200);
 
       const savedUser = await ctx.service.user.getUserById(user._id);
       const equal = tools.bcompare('newpass', savedUser.pass);
