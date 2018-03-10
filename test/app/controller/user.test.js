@@ -11,7 +11,7 @@ describe('test/app/controller/user.test.js', () => {
 
   before(async function() {
     ctx = app.mockContext();
-    loginname = `loginname_${Date.now()}`;
+    loginname = `user_loginname_${Date.now()}`;
     email = `${loginname}@test.com`;
     user = await ctx.service.user.newAndSave('name', loginname, tools.bhash('pass'), email, 'avatar_url', 'active');
     assert(user.loginname === loginname);
@@ -143,15 +143,23 @@ describe('test/app/controller/user.test.js', () => {
       user.is_admin = true;
       app.mockCsrf();
       app.mockContext({ user });
-      const res = await app.httpRequest()
-        .post(url)
-        .type('json')
-        .send(body)
-        .expect(200);
+      const res = await app.httpRequest().post(url).type('json')
+        .send(body);
+      assert(res.status === 200);
       assert(res.body.status === 'success');
       const updatedUser = await ctx.service.user.getUserById(user._id);
       cb(updatedUser);
     }
+
+    it('should POST /passport/local set cookies', async () => {
+      app.mockCsrf();
+      const login = await app.httpRequest().post('/passport/local').send({ name: user.loginname, pass: 'newpass' });
+      assert(login.status === 302);
+      const cookies = login.headers['set-cookie'];
+      const authUser = cookies.find(c => c.indexOf('$$$$') > -1);
+      assert(/=([^$]+)\$/g.exec(authUser)[1] === user._id.toString());
+      assert(login.headers.location === '/');
+    });
 
     it('should POST /user/set_star no_login reject', async () => {
       app.mockCsrf();
