@@ -37,9 +37,6 @@ describe('test/app/controller/user.test.js', () => {
       assert(/<span class="big">([^"]+)<\/span> 积分/g.exec(res.text)[1] === user.score.toString());
       assert(/“([\S\s]+)”/g.exec(res.text)[1].replace(/[\t\s]+/g, '') === '这家伙很懒，什么个性签名都没有留下。');
     });
-
-    it('should GET /user ok', async () => {
-    });
   });
 
   describe('- Setting', () => {
