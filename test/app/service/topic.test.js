@@ -21,7 +21,6 @@ describe('test/app/service/topic.test.js', () => {
     assert(result.loginname === loginname);
   });
 
-
   it('newAndSave should ok', async () => {
     const title = 'first post';
     const content = 'hello world';
@@ -41,7 +40,7 @@ describe('test/app/service/topic.test.js', () => {
 
   it('updateLastReply should ok', async () => {
     const result1 = await topic.updateLastReply(topicId, replyId);
-    assert(result1.last_reply === replyId);
+    assert(result1.last_reply.toString() === replyId.toString());
     const result2 = await topic.updateLastReply();
     assert(!result2);
   });
@@ -62,7 +61,7 @@ describe('test/app/service/topic.test.js', () => {
       good: false,
     };
     const result = await topic.getCountByQuery(query);
-    assert(result === 1);
+    assert(result >= 1);
   });
 
   it('getTopicsByQuery should ok', async () => {
@@ -70,43 +69,31 @@ describe('test/app/service/topic.test.js', () => {
       good: false,
     };
     const result1 = await topic.getTopicsByQuery(query1, {});
-    assert(result1.length === 1);
+    assert(result1.length >= 1);
 
     const query2 = {
-      good: 'test',
+      good: true,
     };
     const result2 = await topic.getTopicsByQuery(query2, {});
-    assert(result2.length === 0);
+    assert(result2.length < result1.length);
   });
 
   it('getLimit5w should ok', async () => {
     const result = await topic.getLimit5w();
-    assert(result.length === 1);
+    assert(result.length >= 1);
   });
 
   it('getFullTopic should ok', async () => {
-    let err1;
-    try {
-      await topic.getFullTopic();
-    } catch (e) {
-      err1 = e;
-      assert(e.message === '此话题不存在或已被删除。');
-    }
-    assert(err1);
+    const result1 = await topic.getFullTopic();
+    assert(result1.length === 0);
 
-    const result = await topic.getFullTopic(topicId);
-    assert.equal(result[0]._id.toString(), topicId);
-    assert(result[1].loginname === loginname);
+    const result2 = await topic.getFullTopic(topicId);
+    assert.equal(result2[0]._id.toString(), topicId);
+    assert(result2[1].loginname === loginname);
 
-    let err2;
     await ctx.model.User.deleteOne({ _id: userId }).exec();
-    try {
-      await topic.getFullTopic(topicId);
-    } catch (e) {
-      err2 = e;
-      assert(e.message === '话题的作者丢了。');
-    }
-    assert(err2);
+    const result3 = await topic.getFullTopic(topicId);
+    assert(result3.length === 0);
   });
 
   it('getTopic should ok', async () => {

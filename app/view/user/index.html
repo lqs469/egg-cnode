@@ -21,7 +21,7 @@
             <span class="big"><%= user.score %></span> 积分
             <% if (user.collect_topic_count) {%>
             <li>
-              <a class='dark' href="/user/<%= user.loginname %>/collections" target='_blank'>
+              <a class='dark' href="/user/<%= user.loginname %>/collections">
                 <span class='big collect-topic-count'><%= user.collect_topic_count %></span>个话题收藏
               </a>
             </li>
@@ -54,7 +54,7 @@
             <% } %>
           </ul>
         </div>
-        <p class="col_fade">注册时间 <%= user.create_at_ago() %></p>
+        <p class="col_fade">注册时间 <%= helper.ago(user.create_at) %></p>
         <% if (current_user && current_user.is_admin) { %>
           <% if (!user.is_star) { %>
           <span class='span-common' id='set_star_btn' action='set_star'>设为达人</span>
@@ -90,7 +90,9 @@
       <span class="col_fade">最近创建的话题</span>
     </div>
     <% if (typeof recent_topics !== 'undefined' && recent_topics.length > 0) { %>
-      <%- include('../topic/abstract', { topic: recent_topics }) %>
+      <% recent_topics.map((topic, index) => { %>
+        <%- include('../topic/abstract.html', { topic }) %>
+      <%}) %>
       <div class='cell more'>
         <a class='dark' href="/user/<%= user.loginname %>/topics">查看更多»</a>
       </div>
@@ -105,7 +107,9 @@
       <span class="col_fade">最近参与的话题</span>
     </div>
     <% if (typeof recent_replies !== 'undefined' && recent_replies.length > 0) { %>
-      <%- include('../topic/abstract', { topic: recent_replies }) %>
+      <% recent_replies.map((topic, index) => { %>
+        <%- include('../topic/abstract.html', { topic }) %>
+      <%}) %>
       <div class='cell more'>
         <a class='dark' href="/user/<%= user.loginname %>/replies">查看更多»</a>
       </div>

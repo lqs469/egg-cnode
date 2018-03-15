@@ -1,7 +1,5 @@
 'use strict';
 
-const BaseModel = require('../common/base_model');
-
 module.exports = app => {
   const mongoose = app.mongoose;
   const Schema = mongoose.Schema;
@@ -17,9 +15,10 @@ module.exports = app => {
     content_is_html: { type: Boolean },
     ups: [ Schema.Types.ObjectId ],
     deleted: { type: Boolean, default: false },
+  }, {
+    usePushEach: true,
   });
 
-  ReplySchema.plugin(BaseModel);
   ReplySchema.index({ topic_id: 1 });
   ReplySchema.index({ author_id: 1, create_at: -1 });
 

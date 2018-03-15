@@ -93,14 +93,16 @@ class TopicService extends Service {
     const topic = await this.ctx.model.Topic.findOne(query);
 
     if (!topic) {
-      throw new Error('此话题不存在或已被删除。');
+      // throw new Error('此话题不存在或已被删除。');
+      return [];
     }
 
     topic.linkedContent = this.service.at.linkUsers(topic.content);
 
     const author = await this.service.user.getUserById(topic.author_id);
     if (!author) {
-      throw new Error('话题的作者丢了。');
+      // throw new Error('话题的作者丢了。');
+      return [];
     }
 
     const replies = await this.service.reply.getRepliesByTopicId(topic._id);
@@ -113,15 +115,16 @@ class TopicService extends Service {
    * @param {String} replyId 回复ID
    * @param {Function} callback 回调函数
    */
-  async updateLastReply(topicId, replyId) {
-    const topic = await this.ctx.model.Topic.findOne({ _id: topicId }).exec();
-    if (!topic) {
-      return;
-    }
-    topic.last_reply = replyId;
-    topic.last_reply_at = new Date();
-    topic.reply_count += 1;
-    return topic.save();
+  updateLastReply(topicId, replyId) {
+    const update = {
+      last_reply: replyId,
+      last_reply_at: new Date(),
+      $inc: {
+        reply_count: 1,
+      },
+    };
+    const opts = { new: true };
+    return this.ctx.model.Topic.findByIdAndUpdate(topicId, update, opts).exec();
   }
 
   /*
@@ -138,20 +141,33 @@ class TopicService extends Service {
    * @param {String} id 主题ID
    */
   async reduceCount(id) {
-    const topic = await this.ctx.model.Topic.findOne({ _id: id }).exec();
+    const update = { $inc: { reply_count: -1 } };
+    const reply = await this.service.reply.getLastReplyByTopId(id);
+    if (reply) {
+      update.last_reply = reply._id;
+    } else {
+      update.last_reply = null;
+    }
+    const opts = { new: true };
+
+    const topic = await this.ctx.model.Topic.findByIdAndUpdate(id, update, opts).exec();
     if (!topic) {
       throw new Error('该主题不存在');
     }
 
-    topic.reply_count -= 1;
-    const reply = await this.service.reply.getLastReplyByTopId(id);
-    if (reply.length !== 0) {
-      topic.last_reply = reply[0]._id;
-    } else {
-      topic.last_reply = null;
-    }
+    return topic;
+  }
 
-    return topic.save();
+  incrementVisitCount(id) {
+    const query = { _id: id };
+    const update = { $inc: { visit_count: 1 } };
+    return this.ctx.model.Topic.findByIdAndUpdate(query, update).exec();
+  }
+
+  incrementCollectCount(id) {
+    const query = { _id: id };
+    const update = { $inc: { collect_count: 1 } };
+    return this.ctx.model.Topic.findByIdAndUpdate(query, update).exec();
   }
 
   newAndSave(title, content, tab, authorId) {

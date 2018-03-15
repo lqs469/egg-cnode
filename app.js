@@ -1,7 +1,5 @@
 'use strict';
 
-const tools = require('./app/common/tools');
-
 module.exports = app => {
   if (app.config.debug) {
     app.config.coreMiddleware.unshift('less');
@@ -23,7 +21,7 @@ module.exports = app => {
 
     const passhash = existUser.pass;
     // TODO: change to async compare
-    const equal = tools.bcompare(password, passhash);
+    const equal = ctx.helper.bcompare(password, passhash);
     // 密码不匹配
     if (!equal) {
       return null;
@@ -79,5 +77,31 @@ module.exports = app => {
       ctx.cookies.set(app.config.auth_cookie_name, auth_token, opts); // cookie 有效期30天
     }
     return existUser;
+  });
+
+  app.passport.deserializeUser(async (ctx, user) => {
+    if (user) {
+      const auth_token = ctx.cookies.get(ctx.app.config.auth_cookie_name, {
+        signed: true,
+      });
+
+      if (!auth_token) {
+        return user;
+      }
+
+      const auth = auth_token.split('$$$$');
+      const user_id = auth[0];
+      user = await ctx.service.user.getUserById(user_id);
+
+      if (!user) {
+        return user;
+      }
+
+      if (ctx.app.config.admins.hasOwnProperty(user.loginname)) {
+        user.is_admin = true;
+      }
+    }
+
+    return user;
   });
 };

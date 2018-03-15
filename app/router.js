@@ -6,10 +6,11 @@
 module.exports = app => {
   const { router, controller, config, middleware } = app;
 
-  const { site, sign, user, topic, rss, search, page } = controller;
+  const { site, sign, user, topic, rss, search, page, reply } = controller;
 
   const userRequired = middleware.userRequired();
   const adminRequired = middleware.adminRequired();
+  const topicPerDayLimit = middleware.topicPerDayLimit(config.topic);
 
   // home page
   router.get('/', site.index);
@@ -67,31 +68,32 @@ module.exports = app => {
   // topic
 
   // // 新建文章界面
-  // router.get('/topic/create', userRequired, topic.create);
+  router.get('/topic/create', userRequired, topic.create);
 
   router.get('/topic/:tid', topic.index); // 显示某个话题
-  // router.post('/topic/:tid/top', adminRequired, topic.top); // 将某话题置顶
-  // router.post('/topic/:tid/good', adminRequired, topic.good); // 将某话题加精
-  // router.get('/topic/:tid/edit', userRequired, topic.showEdit); // 编辑某话题
-  // router.post('/topic/:tid/lock', adminRequired, topic.lock); // 锁定主题，不能再回复
+  router.post('/topic/:tid/top', adminRequired, topic.top); // 将某话题置顶
+  router.post('/topic/:tid/good', adminRequired, topic.good); // 将某话题加精
+  router.get('/topic/:tid/edit', userRequired, topic.showEdit); // 编辑某话题
+  router.post('/topic/:tid/lock', adminRequired, topic.lock); // 锁定主题，不能再回复
 
-  // router.post('/topic/:tid/delete', userRequired, topic.delete);
+  router.post('/topic/:tid/delete', userRequired, topic.delete);
 
   // // 保存新建的文章
-  // router.post('/topic/create', userRequired, limit.peruserperday('create_topic', config.create_post_per_day, { showJson: false }), topic.put);
+  router.post('/topic/create', userRequired, topicPerDayLimit, topic.put);
 
-  // router.post('/topic/:tid/edit', userRequired, topic.update);
-  // router.post('/topic/collect', userRequired, topic.collect); // 关注某话题
-  // router.post('/topic/de_collect', userRequired, topic.de_collect); // 取消关注某话题
+  router.post('/topic/:tid/edit', userRequired, topic.update);
+  router.post('/topic/collect', userRequired, topic.collect); // 关注某话题
+  router.post('/topic/de_collect', userRequired, topic.de_collect); // 取消关注某话题
 
   // // reply controller
-  // router.post('/:topic_id/reply', userRequired, limit.peruserperday('create_reply', config.create_reply_per_day, { showJson: false }), reply.add); // 提交一级回复
-  // router.get('/reply/:reply_id/edit', userRequired, reply.showEdit); // 修改自己的评论页
-  // router.post('/reply/:reply_id/edit', userRequired, reply.update); // 修改某评论
-  // router.post('/reply/:reply_id/delete', userRequired, reply.delete); // 删除某评论
-  // router.post('/reply/:reply_id/up', userRequired, reply.up); // 为评论点赞
-  // router.post('/upload', userRequired, topic.upload); // 上传图片
-
+  router.post('/:topic_id/reply', userRequired,
+    // limit.peruserperday('create_reply', config.create_reply_per_day, { showJson: false }),
+    reply.add); // 提交一级回复
+  router.get('/reply/:reply_id/edit', userRequired, reply.showEdit); // 修改自己的评论页
+  router.post('/reply/:reply_id/edit', userRequired, reply.update); // 修改某评论
+  router.post('/reply/:reply_id/delete', userRequired, reply.delete); // 删除某评论
+  router.post('/reply/:reply_id/up', userRequired, reply.up); // 为评论点赞
+  // router.post('/upload', auth.userRequired, topic.upload); // 上传图片
   // static page
   router.get('/about', page.about);
   router.get('/faq', page.faq);

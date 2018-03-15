@@ -2,7 +2,6 @@
 
 const _ = require('lodash');
 const utility = require('utility');
-const tools = require('../common/tools');
 const validator = require('validator');
 const Controller = require('egg').Controller;
 
@@ -33,11 +32,11 @@ class UserController extends Controller {
     query = { _id: { $in: topic_ids } };
     let recent_replies = await service.topic.getTopicsByQuery(query, {});
 
-    recent_replies = _.sortBy(recent_replies, function(topic) {
+    recent_replies = _.sortBy(recent_replies, topic => {
       return topic_ids.indexOf(topic._id.toString());
     });
 
-    user.url = (function() {
+    user.url = (() => {
       if (user.url && user.url.indexOf('http') !== 0) {
         return 'http://' + user.url;
       }
@@ -90,19 +89,17 @@ class UserController extends Controller {
     }
 
     const pages = Math.ceil(user.collect_topic_count / limit);
-    const opt = {
-      skip: (page - 1) * limit,
-      limit,
-    };
+    const opt = { skip: (page - 1) * limit, limit };
 
     const collects = await service.topicCollect.getTopicCollectsByUserId(user._id, opt);
-    const ids = collects.map(function(doc) {
-      return String(doc.topic_id);
+    const ids = collects.map(doc => {
+      return doc.topic_id.toString();
     });
+
     const query = { _id: { $in: ids } };
     let topics = await service.topic.getTopicsByQuery(query, {});
-    topics = _.sortBy(topics, function(topic) {
-      return ids.indexOf(String(topic._id));
+    topics = _.sortBy(topics, topic => {
+      return ids.indexOf(topic._id.toString());
     });
 
     await ctx.render('user/collect_topics', {
@@ -158,13 +155,13 @@ class UserController extends Controller {
 
     const opt = { skip: (page - 1) * limit, limit, sort: '-create_at' };
     const replies = await service.reply.getRepliesByAuthorId(user._id, opt);
-    const topic_ids = [ ...new Set([ ...replies.map(function(reply) {
+    const topic_ids = [ ...new Set(replies.map(reply => {
       return reply.topic_id.toString();
-    }) ]) ];
+    })) ];
     // 获取所有有评论的主题
     const query = { _id: { $in: topic_ids } };
     let topics = await service.topic.getTopicsByQuery(query, {});
-    topics = _.sortBy(topics, function(topic) {
+    topics = _.sortBy(topics, topic => {
       return topic_ids.indexOf(topic._id.toString());
     });
     const count = await service.reply.getCountByAuthorId(user._id);
@@ -183,17 +180,11 @@ class UserController extends Controller {
     const id = ctx.user._id;
     const user = await service.user.getUserById(id);
 
-    if (!user) {
-      ctx.status = 404;
-      ctx.message = '发生错误';
-      return;
-    }
-
     if (ctx.request.query.save === 'success') {
       user.success = '保存成功。';
     }
 
-    return await ctx.render('user/setting', { user });
+    return await ctx.render('user/setting', { user, pageTitle: '设置' });
   }
 
   async setting() {
@@ -245,12 +236,12 @@ class UserController extends Controller {
       }
 
       const user = await service.user.getUserById(ctx.user._id);
-      const equal = tools.bcompare(oldPass, user.pass);
+      const equal = ctx.helper.bcompare(oldPass, user.pass);
       if (!equal) {
         return showMessage('当前密码不正确。', user);
       }
 
-      const newPassHash = tools.bhash(newPass);
+      const newPassHash = ctx.helper.bhash(newPass);
       user.pass = newPassHash;
       await user.save();
       return showMessage('密码已被修改。', user, true);
@@ -263,11 +254,6 @@ class UserController extends Controller {
     const user_id = body.user_id;
     const user = await service.user.getUserById(user_id);
 
-    if (!user) {
-      ctx.status = 404;
-      ctx.message = 'user is not exists';
-      return;
-    }
     user.is_star = !user.is_star;
     await user.save();
 
@@ -278,13 +264,7 @@ class UserController extends Controller {
     const { ctx, ctx: { request: req }, service } = this;
     const { body: { action } } = req;
     const loginname = ctx.params.name;
-
     const user = await service.user.getUserByLoginName(loginname);
-    if (!user) {
-      ctx.status = 404;
-      ctx.message = 'user is not exists';
-      return;
-    }
 
     if (action === 'set_block') {
       user.is_block = true;
@@ -300,14 +280,7 @@ class UserController extends Controller {
   async deleteAll() {
     const { ctx, service } = this;
     const loginname = ctx.params.name;
-
-
     const user = await service.user.getUserByLoginName(loginname);
-    if (!user) {
-      ctx.status = 404;
-      ctx.message = 'user is not exists';
-      return;
-    }
 
     // 删除主题
     await ctx.model.Topic.update({ author_id: user._id }, { $set: { deleted: true } }, { multi: true });
