@@ -16,3 +16,7 @@ patch:
         patched: '2019-10-03T23:59:41.298Z'
     - egg-alinode > commandx > urllib > proxy-agent > pac-proxy-agent > https-proxy-agent:
         patched: '2019-10-03T23:59:41.298Z'
+    - snyk > proxy-agent > https-proxy-agent:
+        patched: '2019-10-07T13:25:25.075Z'
+    - snyk > proxy-agent > pac-proxy-agent > https-proxy-agent:
+        patched: '2019-10-07T13:25:25.075Z'
